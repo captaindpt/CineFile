@@ -1,3 +1,6 @@
 virtual_env/*
 .idea/*
+.vscode/*
 *.mkv
+test.py
+*.pyc

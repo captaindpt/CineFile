@@ -1,7 +1,7 @@
 import os, re, urllib, json, shutil
 import tmdbsimple as tmdb
 
-tmdb.API_KEY = ""
+tmdb.API_KEY = "6a4bc831d3389b694627785af6f5320e"
 
 
 class Movie:      # just pass file address as input, failed will be True if some problem happens
@@ -127,7 +127,28 @@ class Manager:
             self.status = "Problem Writing the File"
 
 
+class DirectorIcon: # pass Directors folder, like CineFile folder
+    status = ""
+    total_progress = 0
+    done_progress = 0
+    director_icons = dict() # { links folder path to icon URL }
 
-m = Manager("/media/mehdi/Mehdi/Hard")
-m.scan_folder()
-m.make_folders()
+    def __init__(self, basefolder):
+        self.basefolder = basefolder
+
+    def scan_folder(self):  # check self.movie_list afterwards!
+        # self.total_progress = MovieScanner.count_progress(self.basefolder) # TODO change this
+        listd = os.listdir(self.basefolder)
+
+        for item in listd:
+            try:
+                self.validate_director(item)
+            except:
+                print("Problem with API")
+
+
+    def validate_director(self, name):
+        search = tmdb.Search()
+        person = search.person(query=name)
+        if person['total_results'] != 0:
+            self.director_icons[name] = person['results'][0]['profile_path']
