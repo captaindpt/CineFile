@@ -1,4 +1,4 @@
-import os, re, urllib, json
+import os, re, urllib
 import traceback
 import tmdbsimple as tmdb
 from PIL import Image
@@ -210,12 +210,12 @@ class Icon:
 
         self.status = "Setting Icon for " + os.path.abspath(folderpath)
         print(self.status)
-
         try:
             if not os.path.isfile(folderpath + os.path.sep + "desktop.ini"):
                 with open(folderpath + os.path.sep + "desktop.ini", "w") as f:
                     f.write(Icon.desktopini)
                     f.close()
+
 
         except Exception as exc:
             print traceback.format_exc()
@@ -234,6 +234,18 @@ class Icon:
             self.status = "Problem with setting icon"
             print(self.status)
 
+    @staticmethod
+    def clear_iconcache():
+        try:
+            os.system("taskkill /f /im explorer.exe")
+            os.system("attrib -h -s -r \"%userprofile%\AppData\Local\IconCache.db\"")
+            os.system("del /f \"%userprofile%\AppData\Local\IconCache.db\"")
+            os.system("attrib /s /d -h -s -r \"%userprofile%\AppData\Local\Microsoft\Windows\Explorer\*\"")
+            os.system("del /f \"%userprofile%\AppData\Local\Microsoft\Windows\Explorer\\thumbcache_*.db\"")
+            os.system("start explorer")
+
+        except:
+            pass
 
 class DirectorIcon:  # pass Directors folder, like CineFile folder
     status = ""
@@ -288,6 +300,7 @@ class DirectorIcon:  # pass Directors folder, like CineFile folder
                 im_new.save(folderpath + os.path.sep + "icon.ico")
                 os.system("attrib +H \"" + folderpath + os.path.sep + "icon.ico\"")
                 Icon.set_icon(self, folderpath)
+
             except Exception as exc:
                 print traceback.format_exc()
                 print exc
