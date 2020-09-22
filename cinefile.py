@@ -7,6 +7,8 @@ tmdb.API_KEY = "6a4bc831d3389b694627785af6f5320e"
 
 # TODO DO SOMETHING WITH ICON CACHE
 
+# TODO ASK to search recursively and exclude folders
+
 
 class Movie:  # just pass movie file address as input, failed will be True if some problem happens
     failed = False
@@ -34,7 +36,7 @@ class Movie:  # just pass movie file address as input, failed will be True if so
                     self.failed = True
 
     def init_name(self, movie_file):
-        newname = re.sub("[_.]", " ", os.path.basename(movie_file))
+        newname = re.sub("[_.-]", " ", os.path.basename(movie_file))
         findall = re.findall(r"\d{4}", newname)
         if "1080" in findall:
             findall.remove("1080")
@@ -75,11 +77,12 @@ class MovieScanner:  # pass working folder path
     done_progress = 0
     movie_list = list()
     director_icons = dict()  # Director name to director picture
-    folder_pattern = "YEAR - MOVIENAME"  # like (2011 - Melancholia), pattern can be changed
+    folder_pattern = "{YEAR} - {MOVIENAME}"  # like (2011 - Melancholia), pattern can be changed
     formats = ["mp4", "mkv", "avi", "flv", "avi", "wmv"]  # can be changed
 
     def __init__(self, basefolder):
         self.basefolder = basefolder
+        self.work_folder = self.basefolder + os.path.sep + "CineFile"
 
     @staticmethod
     def count_progress(folder):
@@ -118,30 +121,31 @@ class MovieScanner:  # pass working folder path
                 print exc
 
     def generate_fname(self, movie):  # generates folder name
-        out = self.folder_pattern.replace("YEAR", str(movie.year)).replace("MOVIENAME", movie.name)
+        out = self.folder_pattern.replace("{YEAR}", str(movie.year)).replace("{MOVIENAME}", movie.name)
         return out
 
     def make_folders(self):  # Should scan folder first, movie_list should not be empty
         self.total_progress = len(self.movie_list)
-        work_folder = self.basefolder + os.path.sep + "CineFile"
         try:
-            if not os.path.isdir(work_folder):
-                os.mkdir(work_folder)
+            if not os.path.isdir(self.work_folder):
+                os.mkdir(self.work_folder)
+
         except Exception as exc:
             print traceback.format_exc()
             print exc
             self.status = "Problem working with folder"
+            print(self.status)
             return
 
         for movie in self.movie_list:
-            movie_dir = work_folder + os.path.sep + movie.director + os.path.sep + self.generate_fname(movie)
+            movie_dir = self.work_folder + os.path.sep + movie.director + os.path.sep + self.generate_fname(movie)
 
             try:
-                if os.path.isdir(work_folder + os.path.sep + movie.director):
+                if os.path.isdir(self.work_folder + os.path.sep + movie.director):
                     if not os.path.isdir(movie_dir):
                         os.mkdir(movie_dir)
                 else:
-                    os.mkdir(work_folder + os.path.sep + movie.director)
+                    os.mkdir(self.work_folder + os.path.sep + movie.director)
                     os.mkdir(movie_dir)
 
                 if not os.path.isfile(movie_dir + os.path.sep + os.path.basename(movie.abspath)):
@@ -150,15 +154,18 @@ class MovieScanner:  # pass working folder path
                     movie.abspath = movie_dir + os.path.sep + os.path.basename(movie.abspath)
                 self.done_progress += 1
 
+
             except Exception as exc:
                 print traceback.format_exc()
                 print exc
                 self.status = "Problem Writing the File"
+                print(self.status)
 
     def set_icons(self):  # should make_folders first
         self.total_progress = len(self.movie_list)
+
         for movie in self.movie_list:
-            if movie.poster_path is None or movie.folder_path is None:
+            if movie.poster_path is None or movie.folder_path is None or "icon.ico" in os.listdir(movie.folder_path):
                 self.done_progress += 1
                 continue
 
@@ -175,6 +182,7 @@ class MovieScanner:  # pass working folder path
                 print traceback.format_exc()
                 print exc
                 self.status = "Problem making the movie icon"
+                print(self.status)
 
 
 class Icon:
@@ -199,22 +207,32 @@ class Icon:
 
     @staticmethod
     def set_icon(self, folderpath):
+
+        self.status = "Setting Icon for " + os.path.abspath(folderpath)
+        print(self.status)
+
         try:
-            with open(folderpath + os.path.sep + "desktop.ini", "w") as f:
-                f.write(Icon.desktopini)
-                f.close()
+            if not os.path.isfile(folderpath + os.path.sep + "desktop.ini"):
+                with open(folderpath + os.path.sep + "desktop.ini", "w") as f:
+                    f.write(Icon.desktopini)
+                    f.close()
+
         except Exception as exc:
             print traceback.format_exc()
             print exc
             self.status = "Problem in writing desktop.ini"
+            print(self.status)
 
         try:
             os.system('attrib +S +H "' + folderpath + os.path.sep + 'desktop.ini"')
             os.system('attrib +R "' + folderpath + '"')
+
+
         except Exception as exc:
             print traceback.format_exc()
             print exc
             self.status = "Problem with setting icon"
+            print(self.status)
 
 
 class DirectorIcon:  # pass Directors folder, like CineFile folder
@@ -239,6 +257,7 @@ class DirectorIcon:  # pass Directors folder, like CineFile folder
                 print traceback.format_exc()
                 print exc
                 self.status = "Problem with API"
+                print(self.status)
 
     def validate_director(self, name, movie_scanner=None):
 
@@ -246,6 +265,7 @@ class DirectorIcon:  # pass Directors folder, like CineFile folder
             if name in movie_scanner.director_icons:
                 self.director_icons[self.basefolder + os.path.sep + name] = movie_scanner.director_icons[name]
                 self.status = "Recognized " + name
+                print(self.status)
                 return
 
         search = tmdb.Search()
@@ -253,10 +273,12 @@ class DirectorIcon:  # pass Directors folder, like CineFile folder
         if person['total_results'] != 0:
             self.director_icons[self.basefolder + os.path.sep + name] = person['results'][0]['profile_path']
             self.status = "Recognized " + name
+            print(self.status)
 
     def set_icons(self):  # should scan first, director_icons should not be empty
         for folderpath in self.director_icons:
             self.status = "setting icon for " + folderpath
+            print(self.status)
             if self.director_icons[folderpath] is None:
                 continue
             try:
@@ -270,3 +292,6 @@ class DirectorIcon:  # pass Directors folder, like CineFile folder
                 print traceback.format_exc()
                 print exc
                 self.status = "Problem making the movie icon"
+                print(self.status)
+
+
