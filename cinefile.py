@@ -326,14 +326,11 @@ class DirectorIcon:  # pass Directors folder, like CineFile folder
 
 
 class TV:
-    series = list()  # Class Level Attr
     failed = False
     name = None
     season = None
     episode = None
     abspath = None
-    poster_path = None
-    folder_path = None
 
     def __init__(self, tv_file=None):
         if tv_file is not None:
@@ -399,6 +396,8 @@ class TVScanner:  # pass working folder path
                 print exc
 
     def make_folder(self, tv):  # Should scan folder first, movie_list should not be empty
+        self.status = "Moving " + tv
+
         try:
             if not os.path.isdir(self.work_folder):
                 os.mkdir(self.work_folder)
