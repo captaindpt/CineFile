@@ -1,11 +1,13 @@
-import os, re, urllib
+import os
+import re
 import traceback
+import urllib
+
 import tmdbsimple as tmdb
 from PIL import Image
 
 tmdb.API_KEY = "6a4bc831d3389b694627785af6f5320e"
 
-# TODO DO SOMETHING WITH ICON CACHE
 
 # TODO ASK to search recursively and exclude folders
 
@@ -82,14 +84,14 @@ class MovieScanner:  # pass working folder path
 
     def __init__(self, basefolder):
         self.basefolder = basefolder
-        self.work_folder = self.basefolder + os.path.sep + "CineFile"
+        self.work_folder = os.path.join(self.basefolder, "CineFile")
 
     @staticmethod
     def count_progress(folder):
         total_progress = 0
         for item in os.listdir(folder):
-            if os.path.isdir(folder + os.path.sep + item):
-                total_progress += MovieScanner.count_progress(folder + os.path.sep + item)
+            if os.path.isdir(os.path.join(folder, item)):
+                total_progress += MovieScanner.count_progress(os.path.join(folder, item))
             else:
                 total_progress += 1
 
@@ -104,7 +106,7 @@ class MovieScanner:  # pass working folder path
         for i in listd:
             try:
                 if os.path.isdir(folder + i):
-                    self.scan_folder(folder + i + os.path.sep)
+                    self.scan_folder(folder + i)
                 else:
                     if re.split(r"\.", i)[-1] in self.formats:
                         movie = Movie(folder + i)
@@ -138,22 +140,21 @@ class MovieScanner:  # pass working folder path
             return
 
         for movie in self.movie_list:
-            movie_dir = self.work_folder + os.path.sep + movie.director + os.path.sep + self.generate_fname(movie)
+            movie_dir = os.path.join(self.work_folder, movie.director, self.generate_fname(movie))
 
             try:
-                if os.path.isdir(self.work_folder + os.path.sep + movie.director):
+                if os.path.isdir(os.path.join(self.work_folder, movie.director)):
                     if not os.path.isdir(movie_dir):
                         os.mkdir(movie_dir)
                 else:
-                    os.mkdir(self.work_folder + os.path.sep + movie.director)
+                    os.mkdir(os.path.join(self.work_folder, movie.director))
                     os.mkdir(movie_dir)
 
-                if not os.path.isfile(movie_dir + os.path.sep + os.path.basename(movie.abspath)):
-                    os.rename(movie.abspath, movie_dir + os.path.sep + os.path.basename(movie.abspath))
+                if not os.path.isfile(os.path.join(movie_dir, os.path.basename(movie.abspath))):
+                    os.rename(movie.abspath, os.path.join(movie_dir, os.path.basename(movie.abspath)))
                     movie.folder_path = movie_dir
-                    movie.abspath = movie_dir + os.path.sep + os.path.basename(movie.abspath)
+                    movie.abspath = os.path.join(movie_dir, os.path.basename(movie.abspath))
                 self.done_progress += 1
-
 
             except Exception as exc:
                 print traceback.format_exc()
@@ -165,7 +166,8 @@ class MovieScanner:  # pass working folder path
         self.total_progress = len(self.movie_list)
 
         for movie in self.movie_list:
-            if movie.poster_path is None or movie.folder_path is None or "icon.ico" in os.listdir(movie.folder_path):
+            if movie.poster_path is None or movie.folder_path is None or \
+                    os.path.isfile(os.path.join(movie.folder_path, "icon.ico")):
                 self.done_progress += 1
                 continue
 
@@ -173,8 +175,8 @@ class MovieScanner:  # pass working folder path
                 url = urllib.urlopen("https://image.tmdb.org/t/p/w200/" + movie.poster_path)
                 im = Image.open(url).convert('RGBA')
                 im_new = Icon.expand2square(im)
-                im_new.save(movie.folder_path + os.path.sep + "icon.ico")
-                os.system("attrib +H \"" + movie.folder_path + os.path.sep + "icon.ico\"")
+                im_new.save(os.path.join(movie.folder_path, "icon.ico"))
+                os.system("attrib +H \"" + os.path.join(movie.folder_path, "icon.ico\""))
                 Icon.set_icon(self, movie.folder_path)
                 self.done_progress += 1
 
@@ -211,11 +213,10 @@ class Icon:
         self.status = "Setting Icon for " + os.path.abspath(folderpath)
         print(self.status)
         try:
-            if not os.path.isfile(folderpath + os.path.sep + "desktop.ini"):
-                with open(folderpath + os.path.sep + "desktop.ini", "w") as f:
+            if not os.path.isfile(os.path.join(folderpath, "desktop.ini")):
+                with open(os.path.join(folderpath, "desktop.ini", "w")) as f:
                     f.write(Icon.desktopini)
                     f.close()
-
 
         except Exception as exc:
             print traceback.format_exc()
@@ -224,9 +225,8 @@ class Icon:
             print(self.status)
 
         try:
-            os.system('attrib +S +H "' + folderpath + os.path.sep + 'desktop.ini"')
+            os.system('attrib +S +H "' + os.path.join(folderpath, 'desktop.ini"'))
             os.system('attrib +R "' + folderpath + '"')
-
 
         except Exception as exc:
             print traceback.format_exc()
@@ -238,14 +238,15 @@ class Icon:
     def clear_iconcache():
         try:
             os.system("taskkill /f /im explorer.exe")
-            os.system("attrib -h -s -r \"%userprofile%\AppData\Local\IconCache.db\"")
-            os.system("del /f \"%userprofile%\AppData\Local\IconCache.db\"")
-            os.system("attrib /s /d -h -s -r \"%userprofile%\AppData\Local\Microsoft\Windows\Explorer\*\"")
-            os.system("del /f \"%userprofile%\AppData\Local\Microsoft\Windows\Explorer\\thumbcache_*.db\"")
-            os.system("start explorer")
+            os.system(r'attrib -h -s -r "%userprofile%\AppData\Local\IconCache.db"')
+            os.system(r'del /f "%userprofile%\AppData\Local\IconCache.db"')
+            os.system(r'attrib /s /d -h -s -r "%userprofile%\AppData\Local\Microsoft\Windows\Explorer\*"')
+            os.system(r'del /f "%userprofile%\AppData\Local\Microsoft\Windows\Explorer\\thumbcache_*.db"')
+            os.system(r"start explorer")
 
         except:
             pass
+
 
 class DirectorIcon:  # pass Directors folder, like CineFile folder
     status = ""
@@ -261,7 +262,7 @@ class DirectorIcon:  # pass Directors folder, like CineFile folder
         self.total_progress = len(listd)
 
         for item in listd:
-            self.status = "checking folder " + self.basefolder + os.path.sep + item
+            self.status = "checking folder " + os.path.join(self.basefolder, item)
             try:
                 self.validate_director(item, movie_scanner)
                 self.done_progress += 1
@@ -275,7 +276,7 @@ class DirectorIcon:  # pass Directors folder, like CineFile folder
 
         if movie_scanner is not None:
             if name in movie_scanner.director_icons:
-                self.director_icons[self.basefolder + os.path.sep + name] = movie_scanner.director_icons[name]
+                self.director_icons[os.path.join(self.basefolder, name)] = movie_scanner.director_icons[name]
                 self.status = "Recognized " + name
                 print(self.status)
                 return
@@ -283,7 +284,7 @@ class DirectorIcon:  # pass Directors folder, like CineFile folder
         search = tmdb.Search()
         person = search.person(query=name)
         if person['total_results'] != 0:
-            self.director_icons[self.basefolder + os.path.sep + name] = person['results'][0]['profile_path']
+            self.director_icons[os.path.join(self.basefolder, name)] = person['results'][0]['profile_path']
             self.status = "Recognized " + name
             print(self.status)
 
@@ -291,14 +292,14 @@ class DirectorIcon:  # pass Directors folder, like CineFile folder
         for folderpath in self.director_icons:
             self.status = "setting icon for " + folderpath
             print(self.status)
-            if self.director_icons[folderpath] is None:
+            if self.director_icons[folderpath] is None or os.path.isfile(os.path.join(folderpath, "icon.ico")):
                 continue
             try:
                 url = urllib.urlopen("https://image.tmdb.org/t/p/w200/" + self.director_icons[folderpath])
                 im = Image.open(url).convert('RGBA')
                 im_new = Icon.expand2square(im)
-                im_new.save(folderpath + os.path.sep + "icon.ico")
-                os.system("attrib +H \"" + folderpath + os.path.sep + "icon.ico\"")
+                im_new.save(os.path.join(folderpath, "icon.ico"))
+                os.system("attrib +H \"" + os.path.join(folderpath, "icon.ico\""))
                 Icon.set_icon(self, folderpath)
 
             except Exception as exc:
@@ -306,5 +307,3 @@ class DirectorIcon:  # pass Directors folder, like CineFile folder
                 print exc
                 self.status = "Problem making the movie icon"
                 print(self.status)
-
-
