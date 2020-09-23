@@ -5,6 +5,7 @@ import urllib
 import requests
 import tmdbsimple as tmdb
 from PIL import Image
+from guessit import guessit
 
 tmdb.API_KEY = "6a4bc831d3389b694627785af6f5320e"
 
@@ -221,21 +222,23 @@ class Icon:
             return result
 
     @staticmethod
-    def set_icon(self, folderpath):
+    def set_icon(self=None, folderpath=None):
 
-        self.status = "Setting Icon for " + os.path.abspath(folderpath)
-        print(self.status)
+        if self is not None:
+            self.status = "Setting Icon for " + os.path.abspath(folderpath)
+            print(self.status)
         try:
             if not os.path.isfile(os.path.join(folderpath, "desktop.ini")):
-                with open(os.path.join(folderpath, "desktop.ini", "w")) as f:
+                with open(os.path.join(folderpath, "desktop.ini"), "w") as f:
                     f.write(Icon.desktopini)
                     f.close()
 
         except Exception as exc:
             print traceback.format_exc()
             print exc
-            self.status = "Problem in writing desktop.ini"
-            print(self.status)
+            if self is not None:
+                self.status = "Problem in writing desktop.ini"
+                print(self.status)
 
         try:
             os.system('attrib +S +H "' + os.path.join(folderpath, 'desktop.ini"'))
@@ -320,3 +323,132 @@ class DirectorIcon:  # pass Directors folder, like CineFile folder
                 print exc
                 self.status = "Problem making the movie icon"
                 print(self.status)
+
+
+class TV:
+    series = list()  # Class Level Attr
+    failed = False
+    name = None
+    season = None
+    episode = None
+    abspath = None
+    poster_path = None
+    folder_path = None
+
+    def __init__(self, tv_file=None):
+        if tv_file is not None:
+            if os.path.isfile(tv_file):
+                try:
+                    self.init_name(tv_file)
+                    self.failed = True if True in (self.name, self.season, self.episode is None) else False
+
+                except Exception as exc:
+                    self.failed = True
+
+    def init_name(self, tv_file):
+        guess = guessit(os.path.basename(tv_file))
+        self.name = guess['title'].strip()
+        self.season = str(guess['season'])
+        self.episode = str(guess['episode'])
+        self.abspath = os.path.abspath(tv_file).strip()
+
+    def __str__(self):
+        return str(self.name) + " S" + str(self.season) + " E" + str(self.episode)
+
+
+class TVScanner:  # pass working folder path
+    status = ""  # Send Status For GUI
+    total_progress = 0  # Progress Bar Data for GUI
+    done_progress = 0
+    formats = ["mp4", "mkv", "avi", "flv", "avi", "wmv"]  # can be changed
+    exclude_folders = list()
+    rec_search = True  # Search Recursively ?
+
+    def __init__(self, basefolder):
+        self.basefolder = basefolder
+        self.work_folder = os.path.join(self.basefolder, "CineFile - Series")
+
+    def exclude(self, folder_list):  # a string -> folder1,folder2,folder3,folder4
+        fold_list = re.split(r",", folder_list)
+        for folder_name in fold_list:
+            self.exclude_folders.append(folder_name.strip())
+
+    def scan_folder(self, folder=None):  # check self.movie_list afterwards!
+        self.total_progress = MovieScanner.count_progress(self.basefolder)
+        folder = self.basefolder if folder is None else folder
+        folder = folder + os.path.sep
+        listd = os.listdir(folder)
+
+        for i in listd:
+            try:
+                if os.path.isdir(folder + i) and i not in self.exclude_folders:
+                    if self.rec_search:
+                        self.scan_folder(folder + i)
+                else:
+                    if re.split(r"\.", i)[-1] in self.formats:
+                        tv = TV(folder + i)
+                        if not tv.failed:
+                            self.status = "Recognized " + str(tv)
+                            print(self.status)
+                            self.make_folder(tv)
+                        else:
+                            del tv
+                self.done_progress += 1
+            except Exception as exc:
+                print traceback.format_exc()
+                print exc
+
+    def make_folder(self, tv):  # Should scan folder first, movie_list should not be empty
+        try:
+            if not os.path.isdir(self.work_folder):
+                os.mkdir(self.work_folder)
+
+        except Exception as exc:
+            print traceback.format_exc()
+            print exc
+            self.status = "Problem working with folder"
+            print(self.status)
+            return
+
+        try:
+            if not os.path.isdir(os.path.join(self.work_folder, tv.name)):
+                os.mkdir(os.path.join(self.work_folder, tv.name))
+            elif not os.path.isdir(os.path.join(self.work_folder, tv.name, "Season " + tv.season)):
+                os.mkdir(os.path.join(self.work_folder, tv.name, "Season " + tv.season))
+            elif not os.path.isdir(os.path.join(self.work_folder, tv.name, "Season " + tv.season,
+                                                "Episode " + tv.episode)):
+
+                os.mkdir(os.path.join(self.work_folder, tv.name, "Season " + tv.season,
+                                      "Episode " + tv.episode))
+
+            os.rename(tv.abspath, os.path.join(self.work_folder, tv.name, "Season " + tv.season,
+                                                        "Episode " + tv.episode, os.path.basename(tv.abspath)))
+
+        except Exception as exc:
+            print traceback.format_exc()
+            print exc
+            self.status = "Problem Writing the File"
+            print(self.status)
+
+    @staticmethod
+    def set_icons(folder):
+        listd = os.listdir(folder)
+        search = tmdb.Search()
+        for item in listd:
+            if os.path.isfile(os.path.join(folder, item, "icon.ico")):
+                continue
+
+            try:
+                search.tv(query=item)
+                poster_path = search.results[0]['poster_path']
+
+                url = urllib.urlopen("https://image.tmdb.org/t/p/w200/" + poster_path)
+                im = Image.open(url).convert('RGBA')
+                im_new = Icon.expand2square(im)
+                im_new.save(os.path.join(folder, item, "icon.ico"))
+                os.system("attrib +H \"" + os.path.join(folder, item, "icon.ico\""))
+                Icon.set_icon(None, os.path.join(folder, item))
+
+            except Exception as exc:
+                print traceback.format_exc()
+                print exc
