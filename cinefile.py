@@ -2,14 +2,11 @@ import os
 import re
 import traceback
 import urllib
-
 import tmdbsimple as tmdb
 from PIL import Image
 
 tmdb.API_KEY = "6a4bc831d3389b694627785af6f5320e"
 
-
-# TODO ASK to search recursively and exclude folders
 
 
 class Movie:  # just pass movie file address as input, failed will be True if some problem happens
@@ -81,6 +78,8 @@ class MovieScanner:  # pass working folder path
     director_icons = dict()  # Director name to director picture
     folder_pattern = "{YEAR} - {MOVIENAME}"  # like (2011 - Melancholia), pattern can be changed
     formats = ["mp4", "mkv", "avi", "flv", "avi", "wmv"]  # can be changed
+    exclude_folders = list()
+    rec_search = True  # Search Recursively ?
 
     def __init__(self, basefolder):
         self.basefolder = basefolder
@@ -97,6 +96,11 @@ class MovieScanner:  # pass working folder path
 
         return total_progress
 
+    def exclude(self, folder_list):  # a string -> folder1,folder2,folder3,folder4
+        fold_list = re.split(r",", folder_list)
+        for folder_name in fold_list:
+            self.exclude_folders.append(folder_name.strip())
+
     def scan_folder(self, folder=None):  # check self.movie_list afterwards!
         self.total_progress = MovieScanner.count_progress(self.basefolder)
         folder = self.basefolder if folder is None else folder
@@ -105,8 +109,9 @@ class MovieScanner:  # pass working folder path
 
         for i in listd:
             try:
-                if os.path.isdir(folder + i):
-                    self.scan_folder(folder + i)
+                if os.path.isdir(folder + i) and i not in self.exclude_folders:
+                    if self.rec_search:
+                        self.scan_folder(folder + i)
                 else:
                     if re.split(r"\.", i)[-1] in self.formats:
                         movie = Movie(folder + i)
