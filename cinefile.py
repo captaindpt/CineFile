@@ -2,11 +2,19 @@ import os
 import re
 import traceback
 import urllib
+import requests
 import tmdbsimple as tmdb
 from PIL import Image
 
 tmdb.API_KEY = "6a4bc831d3389b694627785af6f5320e"
 
+
+def check_connection(url='https://www.themoviedb.org/', timeout=5):
+    try:
+        r = requests.head(url, timeout=timeout)
+        return True
+    except requests.ConnectionError as ex:
+        return False
 
 
 class Movie:  # just pass movie file address as input, failed will be True if some problem happens
