@@ -3,6 +3,7 @@ import re
 import traceback
 import urllib
 import requests
+import time
 import tmdbsimple as tmdb
 from PIL import Image
 from guessit import guessit
@@ -411,30 +412,34 @@ class TVScanner:  # pass working folder path
             return
 
         try:
-            if not os.path.isdir(os.path.join(self.work_folder, tv.name)):
-                os.mkdir(os.path.join(self.work_folder, tv.name))
-
-            elif tv.season is not None:
-                if not os.path.isdir(os.path.join(self.work_folder, tv.name, "Season " + tv.season)):
-                    os.mkdir(os.path.join(self.work_folder, tv.name, "Season " + tv.season))
-                elif not os.path.isdir(os.path.join(self.work_folder, tv.name, "Season " + tv.season,
-                                                    "Episode " + tv.episode)):
-                    os.mkdir(os.path.join(self.work_folder, tv.name, "Season " + tv.season, "Episode " + tv.episode))
-
-                os.rename(tv.abspath, os.path.join(self.work_folder, tv.name, "Season " + tv.season,
-                                                   "Episode " + tv.episode, os.path.basename(tv.abspath)))
-            else:
-                if not os.path.isdir(os.path.join(self.work_folder, tv.name, "Episode " + tv.episode)):
-                    os.mkdir(os.path.join(self.work_folder, tv.name, "Episode " + tv.episode))
-                os.rename(tv.abspath, os.path.join(self.work_folder, tv.name,
-                                                   "Episode " + tv.episode, os.path.basename(tv.abspath)))
-
+            self.cut_episode(tv)
 
         except Exception as exc:
             print traceback.format_exc()
             print exc
             self.status = "Problem Writing the File"
             print(self.status)
+
+    def cut_episode(self, tv):
+        if not os.path.isdir(os.path.join(self.work_folder, tv.name)):
+            os.mkdir(os.path.join(self.work_folder, tv.name))
+
+        elif tv.season is not None:
+            if not os.path.isdir(os.path.join(self.work_folder, tv.name, "Season " + tv.season)):
+                os.mkdir(os.path.join(self.work_folder, tv.name, "Season " + tv.season))
+            if not os.path.isdir(os.path.join(self.work_folder, tv.name, "Season " + tv.season,
+                                                "Episode " + tv.episode)):
+                os.mkdir(os.path.join(self.work_folder, tv.name, "Season " + tv.season, "Episode " + tv.episode))
+
+            paste = os.path.join(self.work_folder, tv.name, "Season " + tv.season, "Episode " + tv.episode,
+                                 os.path.basename(tv.abspath))
+        else:
+            if not os.path.isdir(os.path.join(self.work_folder, tv.name, "Episode " + tv.episode)):
+                os.mkdir(os.path.join(self.work_folder, tv.name, "Episode " + tv.episode))
+            paste = os.path.join(self.work_folder, tv.name,
+                                 "Episode " + tv.episode, os.path.basename(tv.abspath))
+
+        os.rename(tv.abspath, paste)
 
     @staticmethod
     def set_icons(folder):
