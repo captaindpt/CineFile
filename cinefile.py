@@ -337,7 +337,7 @@ class TV:
             if os.path.isfile(tv_file):
                 try:
                     self.init_name(tv_file)
-                    self.failed = True if True in (self.name, self.season, self.episode is None) else False
+                    self.failed = True if self.name is None or self.episode is None else False
 
                 except Exception as exc:
                     self.failed = True
@@ -345,7 +345,8 @@ class TV:
     def init_name(self, tv_file):
         guess = guessit(os.path.basename(tv_file))
         self.name = guess['title'].strip()
-        self.season = str(guess['season'])
+        if 'season' in guess:
+            self.season = str(guess['season'])
         self.episode = str(guess['episode'])
         self.abspath = os.path.abspath(tv_file).strip()
 
@@ -396,7 +397,7 @@ class TVScanner:  # pass working folder path
                 print exc
 
     def make_folder(self, tv):  # Should scan folder first, movie_list should not be empty
-        self.status = "Moving " + tv
+        self.status = "Moving " + str(tv)
 
         try:
             if not os.path.isdir(self.work_folder):
@@ -412,16 +413,22 @@ class TVScanner:  # pass working folder path
         try:
             if not os.path.isdir(os.path.join(self.work_folder, tv.name)):
                 os.mkdir(os.path.join(self.work_folder, tv.name))
-            elif not os.path.isdir(os.path.join(self.work_folder, tv.name, "Season " + tv.season)):
-                os.mkdir(os.path.join(self.work_folder, tv.name, "Season " + tv.season))
-            elif not os.path.isdir(os.path.join(self.work_folder, tv.name, "Season " + tv.season,
-                                                "Episode " + tv.episode)):
 
-                os.mkdir(os.path.join(self.work_folder, tv.name, "Season " + tv.season,
-                                      "Episode " + tv.episode))
+            elif tv.season is not None:
+                if not os.path.isdir(os.path.join(self.work_folder, tv.name, "Season " + tv.season)):
+                    os.mkdir(os.path.join(self.work_folder, tv.name, "Season " + tv.season))
+                elif not os.path.isdir(os.path.join(self.work_folder, tv.name, "Season " + tv.season,
+                                                    "Episode " + tv.episode)):
+                    os.mkdir(os.path.join(self.work_folder, tv.name, "Season " + tv.season, "Episode " + tv.episode))
 
-            os.rename(tv.abspath, os.path.join(self.work_folder, tv.name, "Season " + tv.season,
-                                                        "Episode " + tv.episode, os.path.basename(tv.abspath)))
+                os.rename(tv.abspath, os.path.join(self.work_folder, tv.name, "Season " + tv.season,
+                                                   "Episode " + tv.episode, os.path.basename(tv.abspath)))
+            else:
+                if not os.path.isdir(os.path.join(self.work_folder, tv.name, "Episode " + tv.episode)):
+                    os.mkdir(os.path.join(self.work_folder, tv.name, "Episode " + tv.episode))
+                os.rename(tv.abspath, os.path.join(self.work_folder, tv.name,
+                                                   "Episode " + tv.episode, os.path.basename(tv.abspath)))
+
 
         except Exception as exc:
             print traceback.format_exc()
