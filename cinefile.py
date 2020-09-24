@@ -106,6 +106,9 @@ class MovieScanner:  # pass working folder path
 
         return total_progress
 
+    def set_workfolder(self, work_folder):
+        self.work_folder = os.path.join(self.basefolder, work_folder)
+
     def exclude(self, folder_list):  # a string -> folder1,folder2,folder3,folder4
         fold_list = re.split(r",", folder_list)
         for folder_name in fold_list:
@@ -129,6 +132,8 @@ class MovieScanner:  # pass working folder path
                             self.status = "Recognized " + str(movie)
                             print(self.status)
                             self.director_icons[movie.director] = movie.director_icon
+                            movie.folder_path = os.path.join(self.work_folder, movie.director,
+                                                             self.generate_fname(movie))
                             self.movie_list.append(movie)
                         else:
                             del movie
@@ -155,7 +160,7 @@ class MovieScanner:  # pass working folder path
             return
 
         for movie in self.movie_list:
-            movie_dir = os.path.join(self.work_folder, movie.director, self.generate_fname(movie))
+            movie_dir = movie.folder_path
 
             try:
                 if os.path.isdir(os.path.join(self.work_folder, movie.director)):
@@ -167,7 +172,6 @@ class MovieScanner:  # pass working folder path
 
                 if not os.path.isfile(os.path.join(movie_dir, os.path.basename(movie.abspath))):
                     os.rename(movie.abspath, os.path.join(movie_dir, os.path.basename(movie.abspath)))
-                    movie.folder_path = movie_dir
                     movie.abspath = os.path.join(movie_dir, os.path.basename(movie.abspath))
                 self.done_progress += 1
 
