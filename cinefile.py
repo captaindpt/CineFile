@@ -3,7 +3,6 @@ import re
 import traceback
 import urllib
 import requests
-import time
 import tmdbsimple as tmdb
 from PIL import Image
 from guessit import guessit

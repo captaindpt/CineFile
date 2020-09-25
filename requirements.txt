@@ -1,3 +1,4 @@
 tmdbsimple
 Pillow
 guessit
+requests
