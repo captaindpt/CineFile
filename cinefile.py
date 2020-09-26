@@ -195,7 +195,7 @@ class MovieScanner:  # pass working folder path
                 im_new = Icon.expand2square(im)
                 im_new.save(os.path.join(movie.folder_path, "icon.ico"))
                 os.system("attrib +H \"" + os.path.join(movie.folder_path, "icon.ico\""))
-                Icon.set_icon(self, movie.folder_path)
+                Icon.set_icon(movie.folder_path, self)
                 self.done_progress += 1
 
             except Exception as exc:
@@ -226,11 +226,11 @@ class Icon:
             return result
 
     @staticmethod
-    def set_icon(self=None, folderpath=None):
+    def set_icon(folderpath, object=None):
 
-        if self is not None:
-            self.status = "Setting Icon for " + os.path.abspath(folderpath)
-            print(self.status)
+        if object is not None:
+            object.status = "Setting Icon for " + os.path.abspath(folderpath)
+            print(object.status)
         try:
             if not os.path.isfile(os.path.join(folderpath, "desktop.ini")):
                 with open(os.path.join(folderpath, "desktop.ini"), "w") as f:
@@ -240,9 +240,9 @@ class Icon:
         except Exception as exc:
             print traceback.format_exc()
             print exc
-            if self is not None:
-                self.status = "Problem in writing desktop.ini"
-                print(self.status)
+            if object is not None:
+                object.status = "Problem in writing desktop.ini"
+                print(object.status)
 
         try:
             os.system('attrib +S +H "' + os.path.join(folderpath, 'desktop.ini"'))
@@ -251,8 +251,8 @@ class Icon:
         except Exception as exc:
             print traceback.format_exc()
             print exc
-            self.status = "Problem with setting icon"
-            print(self.status)
+            object.status = "Problem with setting icon"
+            print(object.status)
 
     @staticmethod
     def clear_iconcache():
@@ -320,7 +320,7 @@ class DirectorIcon:  # pass Directors folder, like CineFile folder
                 im_new = Icon.expand2square(im)
                 im_new.save(os.path.join(folderpath, "icon.ico"))
                 os.system("attrib +H \"" + os.path.join(folderpath, "icon.ico\""))
-                Icon.set_icon(self, folderpath)
+                Icon.set_icon(folderpath, self)
 
             except Exception as exc:
                 print traceback.format_exc()
@@ -461,7 +461,7 @@ class TVScanner:  # pass working folder path
                 im_new = Icon.expand2square(im)
                 im_new.save(os.path.join(folder, item, "icon.ico"))
                 os.system("attrib +H \"" + os.path.join(folder, item, "icon.ico\""))
-                Icon.set_icon(None, os.path.join(folder, item))
+                Icon.set_icon(os.path.join(folder, item), None)
 
             except Exception as exc:
                 print traceback.format_exc()
