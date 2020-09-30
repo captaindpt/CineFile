@@ -39,7 +39,7 @@ class Movie:  # just pass movie file address as input, failed will be True if so
                     self.failed = True if self.name is None or self.year is None or self.id is None or self.director is None \
                         else False
                 except Exception as exc:
-                    print traceback.format_exc()
+                    print(traceback.format_exc())
                     print (movie_file, self.name, self.year, self.id)
                     self.failed = True
 
@@ -71,12 +71,12 @@ class Movie:  # just pass movie file address as input, failed will be True if so
         movie = tmdb.Movies(self.id)
         for personnel in movie.credits()['crew']:
             if personnel['job'] == "Director":
-                self.director = personnel['name'].encode("utf-8").strip()
+                self.director = personnel['name'].strip().encode("utf-8")
                 self.director_icon = personnel['profile_path']
                 break
 
     def __str__(self):
-        return self.name + " " + str(self.year) + " : " + self.director
+        return str(self.name) + " " + str(self.year) + " : " + self.director.decode('utf-8')
 
 
 class MovieScanner:  # pass working folder path
@@ -131,15 +131,15 @@ class MovieScanner:  # pass working folder path
                             self.status = "Recognized " + str(movie)
                             print(self.status)
                             self.director_icons[movie.director] = movie.director_icon
-                            movie.folder_path = os.path.join(self.work_folder, movie.director,
+                            movie.folder_path = os.path.join(self.work_folder, movie.director.decode('utf-8'),
                                                              self.generate_fname(movie))
                             self.movie_list.append(movie)
                         else:
                             del movie
                 self.done_progress += 1
             except Exception as exc:
-                print traceback.format_exc()
-                print exc
+                print(traceback.format_exc())
+                print(exc)
 
     def generate_fname(self, movie):  # generates folder name
         out = self.folder_pattern.replace("{YEAR}", str(movie.year)).replace("{MOVIENAME}", movie.name)
@@ -152,8 +152,8 @@ class MovieScanner:  # pass working folder path
                 os.mkdir(self.work_folder)
 
         except Exception as exc:
-            print traceback.format_exc()
-            print exc
+            print(traceback.format_exc())
+            print(exc)
             self.status = "Problem working with folder"
             print(self.status)
             return
@@ -162,11 +162,11 @@ class MovieScanner:  # pass working folder path
             movie_dir = movie.folder_path
 
             try:
-                if os.path.isdir(os.path.join(self.work_folder, movie.director)):
+                if os.path.isdir(os.path.join(self.work_folder, movie.director.decode('utf-8'))):
                     if not os.path.isdir(movie_dir):
                         os.mkdir(movie_dir)
                 else:
-                    os.mkdir(os.path.join(self.work_folder, movie.director))
+                    os.mkdir(os.path.join(self.work_folder, movie.director.decode('utf-8')))
                     os.mkdir(movie_dir)
 
                 if not os.path.isfile(os.path.join(movie_dir, os.path.basename(movie.abspath))):
@@ -175,8 +175,8 @@ class MovieScanner:  # pass working folder path
                 self.done_progress += 1
 
             except Exception as exc:
-                print traceback.format_exc()
-                print exc
+                print(traceback.format_exc())
+                print(exc)
                 self.status = "Problem Writing the File"
                 print(self.status)
 
@@ -190,7 +190,7 @@ class MovieScanner:  # pass working folder path
                 continue
 
             try:
-                url = urllib.urlopen("https://image.tmdb.org/t/p/w200/" + movie.poster_path)
+                url = urllib.request.urlopen("https://image.tmdb.org/t/p/w200/" + movie.poster_path)
                 im = Image.open(url).convert('RGBA')
                 im_new = Icon.expand2square(im)
                 im_new.save(os.path.join(movie.folder_path, "icon.ico"))
@@ -199,8 +199,8 @@ class MovieScanner:  # pass working folder path
                 self.done_progress += 1
 
             except Exception as exc:
-                print traceback.format_exc()
-                print exc
+                print(traceback.format_exc())
+                print(exc)
                 self.status = "Problem making the movie icon"
                 print(self.status)
 
@@ -238,8 +238,8 @@ class Icon:
                     f.close()
 
         except Exception as exc:
-            print traceback.format_exc()
-            print exc
+            print(traceback.format_exc())
+            print(exc)
             if object is not None:
                 object.status = "Problem in writing desktop.ini"
                 print(object.status)
@@ -249,8 +249,8 @@ class Icon:
             os.system('attrib +R "' + folderpath + '"')
 
         except Exception as exc:
-            print traceback.format_exc()
-            print exc
+            print(traceback.format_exc())
+            print(exc)
             object.status = "Problem with setting icon"
             print(object.status)
 
@@ -287,8 +287,8 @@ class DirectorIcon:  # pass Directors folder, like CineFile folder
                 self.validate_director(item, movie_scanner)
                 self.done_progress += 1
             except Exception as exc:
-                print traceback.format_exc()
-                print exc
+                print(traceback.format_exc())
+                print(exc)
                 self.status = "Problem with API"
                 print(self.status)
 
@@ -315,7 +315,7 @@ class DirectorIcon:  # pass Directors folder, like CineFile folder
             if self.director_icons[folderpath] is None or os.path.isfile(os.path.join(folderpath, "icon.ico")):
                 continue
             try:
-                url = urllib.urlopen("https://image.tmdb.org/t/p/w200/" + self.director_icons[folderpath])
+                url = urllib.request.urlopen("https://image.tmdb.org/t/p/w200/" + self.director_icons[folderpath])
                 im = Image.open(url).convert('RGBA')
                 im_new = Icon.expand2square(im)
                 im_new.save(os.path.join(folderpath, "icon.ico"))
@@ -323,8 +323,8 @@ class DirectorIcon:  # pass Directors folder, like CineFile folder
                 Icon.set_icon(folderpath, self)
 
             except Exception as exc:
-                print traceback.format_exc()
-                print exc
+                print(traceback.format_exc())
+                print(exc)
                 self.status = "Problem making the movie icon"
                 print(self.status)
 
@@ -397,8 +397,8 @@ class TVScanner:  # pass working folder path
                             del tv
                 self.done_progress += 1
             except Exception as exc:
-                print traceback.format_exc()
-                print exc
+                print(traceback.format_exc())
+                print(exc)
 
     def make_folder(self, tv):  # Should scan folder first, movie_list should not be empty
         self.status = "Moving " + str(tv)
@@ -408,8 +408,8 @@ class TVScanner:  # pass working folder path
                 os.mkdir(self.work_folder)
 
         except Exception as exc:
-            print traceback.format_exc()
-            print exc
+            print(traceback.format_exc())
+            print(exc)
             self.status = "Problem working with folder"
             print(self.status)
             return
@@ -418,8 +418,8 @@ class TVScanner:  # pass working folder path
             self.cut_episode(tv)
 
         except Exception as exc:
-            print traceback.format_exc()
-            print exc
+            print(traceback.format_exc())
+            print(exc)
             self.status = "Problem Writing the File"
             print(self.status)
 
@@ -456,7 +456,7 @@ class TVScanner:  # pass working folder path
                 search.tv(query=item)
                 poster_path = search.results[0]['poster_path']
 
-                url = urllib.urlopen("https://image.tmdb.org/t/p/w200/" + poster_path)
+                url = urllib.request.urlopen("https://image.tmdb.org/t/p/w200/" + poster_path)
                 im = Image.open(url).convert('RGBA')
                 im_new = Icon.expand2square(im)
                 im_new.save(os.path.join(folder, item, "icon.ico"))
@@ -464,5 +464,5 @@ class TVScanner:  # pass working folder path
                 Icon.set_icon(os.path.join(folder, item), None)
 
             except Exception as exc:
-                print traceback.format_exc()
-                print exc
+                print(traceback.format_exc())
+                print(exc)
